@@ -1,0 +1,21 @@
+# Archivos generados por Maven y reportes
+target/
+
+# Configuración del editor
+.idea/
+.vscode/
+*.iml
+
+# Logs
+*.log
+
+# Variables de entorno y configuración privada
+.env
+.env.*
+!.env.example
+application-local.properties
+application-secrets.properties
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db

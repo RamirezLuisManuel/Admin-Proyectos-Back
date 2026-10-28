@@ -1,5 +1,6 @@
 package com.mx.cbtis.gestor.controller;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -41,6 +42,11 @@ class UpgradeApiIntegrationTest {
     @Autowired private UsuarioRepository usuarios;
     @Autowired private ComentariosRepository comentarios;
     @Autowired private AsignacionesRepository asignaciones;
+    @Autowired private UsuarioController usuarioController;
+    @Autowired private ProyectosController proyectosController;
+    @Autowired private TareasController tareasController;
+    @Autowired private ComentariosController comentariosController;
+    @Autowired private AsignacionesController asignacionesController;
 
     @Test
     void proyectoCrudConservaContratoJsonYClaveIdentity() throws Exception {
@@ -278,5 +284,25 @@ class UpgradeApiIntegrationTest {
                         """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.nombre").value("000"));
+
+        assertEquals(0, usuarioController.addUsuario(null));
+        assertEquals(0, usuarioController.updateUsuario(null));
+        assertEquals(0, usuarioController.deleteUsuario(null));
+
+        assertEquals(0, proyectosController.addProyecto(null));
+        assertEquals(0, proyectosController.updateProyecto(null));
+        assertEquals(0, proyectosController.deleteProyecto(null));
+
+        assertEquals(0, tareasController.addTareas(null));
+        assertEquals(0, tareasController.updateTareas(null));
+        assertEquals(0, tareasController.deleteTareas(null));
+
+        assertEquals(0, comentariosController.addComentario(null));
+        assertEquals(0, comentariosController.updateComentario(null));
+        assertEquals(0, comentariosController.deleteComentario(null));
+
+        assertEquals(0, asignacionesController.addAsignacion(null));
+        assertEquals(0, asignacionesController.updateAsignacion(null));
+        assertEquals(0, asignacionesController.deleteAsignacion(null));
     }
 }

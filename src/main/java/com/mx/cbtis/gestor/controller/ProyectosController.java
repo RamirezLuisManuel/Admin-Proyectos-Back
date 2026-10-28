@@ -21,18 +21,6 @@ public class ProyectosController {
 	@Autowired 
 	ProtectosRepository proyectostable;
 	
-	/*@PostMapping("/buscarProyecto")
-	public Proyectos getProyecto(@RequestBody Proyectos proyecto) {
-		
-		Proyectos buscar = new Proyectos();
-		Optional<Proyectos> proyectos = proyectostable.findById(proyecto.getId_proyecto());
-		if(proyectos.isPresent()) {
-			buscar = proyectos.get();
-		}
-		
-		return buscar;
-	}*/
-	
 	@GetMapping("/buscarProyecto")
 	public Proyectos getProyecto(@RequestParam int id_proyecto) {
 		
@@ -49,7 +37,7 @@ public class ProyectosController {
 	public int addProyecto(@RequestBody Proyectos proyecto) {
 		
 		int flag = 0;
-		if(!proyecto.equals(null)) {
+		if(proyecto != null) {
 			
 			proyectostable.save(proyecto);
 			flag = 1;
@@ -62,7 +50,7 @@ public class ProyectosController {
 	public int updateProyecto(@RequestBody Proyectos proyecto) {
 		
 		int flag = 0;
-		if(!proyecto.equals(null)) {
+		if(proyecto != null) {
 			proyectostable.save(proyecto);
 			flag = 1;
 		}
@@ -74,7 +62,7 @@ public class ProyectosController {
 	public int deleteProyecto(@RequestBody Proyectos proyecto) {
 		
 		int flag = 0;
-		if(!proyecto.equals(null)) {
+		if(proyecto != null) {
 			proyectostable.delete(proyecto);
 			flag = 1;
 		}

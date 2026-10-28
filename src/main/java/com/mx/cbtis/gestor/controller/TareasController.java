@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.mx.cbtis.gestor.modelo.Tareas;
-import com.mx.cbtis.gestor.modelo.Usuario;
 import com.mx.cbtis.gestor.repository.TareasRepository;
 
 @RestController
@@ -44,7 +43,7 @@ public class TareasController {
 	public int addTareas(@RequestBody Tareas tareas) {
 		
 		int flag = 0;
-		if(!tareas.equals(null)) {
+		if(tareas != null) {
 			tareastable.save(tareas);
 			flag = 1;
 		}
@@ -56,7 +55,7 @@ public class TareasController {
 	public int updateTareas(@RequestBody Tareas tareas) {
 		
 		int flag = 0;
-		if(!tareas.equals(null)) {
+		if(tareas != null) {
 			tareastable.save(tareas);
 			flag = 1;
 		}
@@ -68,7 +67,7 @@ public class TareasController {
 	public int deleteTareas(@RequestBody Tareas tareas) {
 		
 		int flag = 0;
-		if(!tareas.equals(null)) {
+		if(tareas != null) {
 			tareastable.delete(tareas);
 			flag = 1;
 		}

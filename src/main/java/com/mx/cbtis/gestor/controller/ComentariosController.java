@@ -22,7 +22,6 @@ public class ComentariosController {
 	ComentariosRepository comentariostable;
 	
 	@PostMapping("/getComentario")
-
 	public List<Comentarios> getComentario(@RequestBody Comentarios idComentario){
 		List<Comentarios> listaComentarios = comentariostable.findByTarea(idComentario.getId_tarea());
 		return listaComentarios;
@@ -44,7 +43,7 @@ public class ComentariosController {
 	public int addComentario(@RequestBody Comentarios comentario) {
 		
 		int flag = 0;
-		if(!comentario.equals(null)) {
+		if(comentario != null) {
 			comentariostable.save(comentario);
 			flag = 1;
 		}
@@ -56,7 +55,7 @@ public class ComentariosController {
 	public int updateComentario(@RequestBody Comentarios comentario) {
 		
 		int flag = 0;
-		if(!comentario.equals(null)) {
+		if(comentario != null) {
 			comentariostable.save(comentario);
 			flag = 1;
 		}
@@ -68,7 +67,7 @@ public class ComentariosController {
 	public int deleteComentario(@RequestBody Comentarios comentario) {
 		
 		int flag = 0;
-		if(!comentario.equals(null)) {
+		if(comentario != null) {
 			comentariostable.delete(comentario);
 			flag = 1;
 		}

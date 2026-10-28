@@ -87,25 +87,62 @@ En SonarQube, **Administration → Configuration → Webhooks → Create**:
 |---|---|
 | Name | `Jenkins` |
 | URL | `http://jenkins-lts:8080/sonarqube-webhook/` |
+| Secret | Vacío en esta configuración inicial; no es el token de análisis |
 
 Conserva la barra final. Un webhook global sirve para ambos proyectos.
+
+`jenkins-lts:8080` identifica el receptor dentro de Docker. La ruta `/sonarqube-webhook/` la expone el plugin de Jenkins: SonarQube envía ahí el resultado del análisis y Jenkins reanuda la comprobación del Quality Gate. No es una ruta de la API del proyecto ni requiere crear un controlador.
+
+Si aparece `Invalid URL ... site-local ... are not allowed for webhooks`, la validación de destinos internos está bloqueando el registro. En este laboratorio aislado, entra en **Administration → Configuration → General Settings → Security**, busca **Enable local webhooks validation** (`sonar.validateWebhooks`), cambia a `false`, guarda y vuelve a crear el webhook. Es una indicación de configuración, no una afirmación de que ya esté aplicada. Desactivarla reduce la protección contra destinos internos/SSRF; no usarla como configuración general de un servidor público.
+
+El secreto HMAC es opcional y diferente de `sonarqube-token`. Para habilitarlo posteriormente sin cambiar el Jenkinsfile, guarda un valor aleatorio como **Secret text** en Jenkins y selecciónalo en **SonarQube servers → Advanced → Webhook Secret**; configura el mismo valor en el campo Secret de SonarQube. Nunca publiques el valor en Git.
 
 El paso `waitForQualityGate()` espera hasta 10 minutos. Si el estado recibido no es `OK`, el pipeline falla e informa el estado. Si vence el tiempo, revisa la última entrega del webhook y la comunicación entre contenedores.
 
 Que el análisis se envíe correctamente no garantiza que el código apruebe el Quality Gate. No se han bajado umbrales ni ocultado hallazgos para forzar una aprobación.
 
-## 6. Trabajo Pipeline
+## 6. Trabajo Pipeline con el script pegado en Jenkins
 
-1. Sube `Jenkinsfile` y el código actualizado a este repositorio.
-2. Crea una tarea de tipo **Pipeline**.
-3. Selecciona **Pipeline script from SCM → Git**.
-4. Indica la URL de este repositorio y las credenciales Git si requiere autenticación.
-5. Rama `*/main`; Script Path `Jenkinsfile`.
-6. Guarda y ejecuta **Build Now**.
+1. Crea una tarea de tipo **Pipeline**, o entra en **Configurar** en la tarea existente.
+2. En el apartado **Pipeline → Definition**, selecciona **Pipeline script**; no **Pipeline script from SCM**.
+3. Abre el `Jenkinsfile` de este repositorio y copia todo, desde los comentarios iniciales hasta la última llave de `pipeline { ... }`.
+4. Pega ese contenido en el campo **Script** y conserva **Use Groovy Sandbox** activado.
+5. Guarda con **Save** y ejecuta **Build Now / Construir ahora**.
+6. Abre **Console Output** para comprobar checkout, Java/Maven, pruebas, cobertura y Quality Gate.
+
+La etapa **Obtener codigo** utiliza `git branch: 'main', url: 'https://github.com/RamirezLuisManuel/Admin-Proyectos-Back.git'`. El checkout es explícito porque `checkout scm` depende del contexto SCM que no se configura en esta modalidad. No hay campo **Script Path** que completar.
+
+El repositorio se comprobó como público el 21/10/2026; su descarga HTTPS no requiere credencial Git. `sonarqube-token` sigue siendo necesario para el análisis y no se utiliza para descargar el código. Si el repositorio se vuelve privado, registra una credencial Git HTTPS apropiada y añade su ID al paso `git`.
+
+El `Jenkinsfile` puede conservarse y versionarse como copia del pipeline, pero Jenkins ejecuta el texto guardado en **Script**. Subir cambios a ese archivo no actualiza automáticamente el script de la tarea: debes volver a pegar su contenido cuando modifiques el pipeline. El código de la aplicación sí se obtiene de `main` en cada build.
 
 Al usar un repositorio por componente, el POM queda en la raíz del workspace. No uses `dir('Ejercicio5MyAPIGestor')`.
 
+La etapa **Ubicar POM y compilar** utiliza `dir('.')`, muestra la carpeta actual con `pwd`, comprueba `pom.xml` y ejecuta `mvn -B -ntp clean verify` dentro del mismo bloque. El punto corresponde a la raíz del checkout, no a `src` ni a una ruta de Windows. Un `sh 'cd ...'` en otra etapa no cambia permanentemente la carpeta de los pasos siguientes.
+
 Las pruebas del backend usan H2 en memoria: el build no necesita MariaDB ni sus credenciales. Un despliegue o una prueba posterior sobre MariaDB sí requiere una conexión configurada.
+
+## 7. Variables de base de datos y alcance del build
+
+El pipeline no despliega ni inicia permanentemente la aplicación. El runtime de la API conserva `DB_URL`, `DB_USERNAME` y `DB_PASSWORD`; las pruebas usan exclusivamente la configuración H2 de `src/test/resources/application.properties`. H2 no acredita compatibilidad completa de SQL con MariaDB.
+
+Para iniciar manualmente la API desde PowerShell en la raíz del repositorio:
+
+```powershell
+$env:DB_URL = 'jdbc:mariadb://localhost:3306/dbgestor'
+$env:DB_USERNAME = 'TU_USUARIO_BD'
+$env:DB_PASSWORD = 'TU_PASSWORD_BD'
+.\mvnw.cmd spring-boot:run
+```
+
+Las variables deben existir en la terminal que inicia Java. Si la API se ejecuta en Docker y MariaDB está en Windows, utiliza `host.docker.internal` en lugar de `localhost`; si MariaDB está en otro contenedor de la misma red, utiliza su nombre de servicio. El frontend consume la API y no recibe credenciales de BD. La BD interna de SonarQube es independiente; su aviso de almacenamiento embebido no se refiere a `dbgestor`.
+
+## Repositorios y correspondencia de proyectos
+
+- Backend: https://github.com/RamirezLuisManuel/Admin-Proyectos-Back — `sonar.projectKey=admin-proyectos-back`.
+- Frontend: https://github.com/RamirezLuisManuel/Admin-Proyectos-Front — `sonar.projectKey=admin-proyectos-front`.
+
+`installationName: 'SonarQube'` selecciona el servidor; `credentialsId: 'sonarqube-token'` selecciona la credencial; `-Dsonar.projectKey` selecciona el proyecto destino. Compartir webhook no mezcla los análisis.
 
 ## Direcciones
 
@@ -137,3 +174,4 @@ JaCoCo mide el Java ejecutado por las pruebas; no mide automáticamente el JavaS
 - [Coverage](https://www.jenkins.io/doc/pipeline/steps/coverage/)
 - [Configurar SonarQube en Jenkins](https://docs.sonarsource.com/sonarqube-server/analyzing-source-code/ci-integration/jenkins-integration/global-setup)
 - [Webhook y Quality Gate](https://docs.sonarsource.com/sonarqube-server/analyzing-source-code/ci-integration/jenkins-integration/pipeline-pause)
+- [Validación de destinos internos: explicación del equipo de SonarSource](https://community.sonarsource.com/t/validating-webhooks-breaks-our-ci/189245)

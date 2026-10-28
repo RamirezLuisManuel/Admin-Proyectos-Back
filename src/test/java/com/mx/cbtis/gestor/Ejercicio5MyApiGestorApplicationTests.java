@@ -10,4 +10,11 @@ class Ejercicio5MyApiGestorApplicationTests {
 	void contextLoads() {
 	}
 
+	@Test
+	void mainRuns() {
+		Ejercicio5MyApiGestorApplication.main(new String[] {
+				"--server.port=0",
+				"--spring.datasource.url=jdbc:h2:mem:gestor-main;DB_CLOSE_DELAY=-1;MODE=MySQL"
+		});
+	}
 }

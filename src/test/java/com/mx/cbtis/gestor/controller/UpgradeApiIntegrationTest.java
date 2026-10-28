@@ -254,4 +254,29 @@ class UpgradeApiIntegrationTest {
                         """.formatted(idA)))
                 .andExpect(status().isOk()).andExpect(content().string("1"));
     }
+
+    @Test
+    void ramasNegativasYEntidadesInexistentes() throws Exception {
+        mvc.perform(get("/buscarUsuario").param("id", "999999"))
+                .andExpect(status().isOk());
+
+        mvc.perform(get("/buscarProyecto").param("id_proyecto", "999999"))
+                .andExpect(status().isOk());
+
+        mvc.perform(get("/buscarTarea").param("id_tarea", "999999"))
+                .andExpect(status().isOk());
+
+        mvc.perform(get("/buscarComentario").param("id", "999999"))
+                .andExpect(status().isOk());
+
+        mvc.perform(get("/buscarAsignacion").param("id", "999999"))
+                .andExpect(status().isOk());
+
+        mvc.perform(post("/getUsuarioLogin").contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"correo_electronico":"inexistente@cbtis.edu.mx","contrasena":"erronea"}
+                        """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nombre").value("000"));
+    }
 }

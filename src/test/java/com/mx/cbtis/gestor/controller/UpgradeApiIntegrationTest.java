@@ -19,9 +19,13 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.mx.cbtis.gestor.modelo.Asignaciones;
+import com.mx.cbtis.gestor.modelo.Comentarios;
 import com.mx.cbtis.gestor.modelo.Proyectos;
 import com.mx.cbtis.gestor.modelo.Tareas;
 import com.mx.cbtis.gestor.modelo.Usuario;
+import com.mx.cbtis.gestor.repository.AsignacionesRepository;
+import com.mx.cbtis.gestor.repository.ComentariosRepository;
 import com.mx.cbtis.gestor.repository.ProtectosRepository;
 import com.mx.cbtis.gestor.repository.TareasRepository;
 import com.mx.cbtis.gestor.repository.UsuarioRepository;
@@ -35,6 +39,8 @@ class UpgradeApiIntegrationTest {
     @Autowired private ProtectosRepository proyectos;
     @Autowired private TareasRepository tareas;
     @Autowired private UsuarioRepository usuarios;
+    @Autowired private ComentariosRepository comentarios;
+    @Autowired private AsignacionesRepository asignaciones;
 
     @Test
     void proyectoCrudConservaContratoJsonYClaveIdentity() throws Exception {
@@ -112,5 +118,140 @@ class UpgradeApiIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.nombre").value("Usuario de migración"))
                 .andExpect(jsonPath("$.correo_electronico").value("upgrade@example.test"));
+
+        // Login fallido
+        mvc.perform(post("/getUsuarioLogin").contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"correo_electronico":"upgrade@example.test","contrasena":"erronea"}
+                        """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nombre").value("000"));
+
+        // CRUD completo de Usuario
+        mvc.perform(post("/addUsuario").contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"nombre":"Nuevo Usuario Test","correo_electronico":"nuevo@test.com",
+                         "contrasena":"123456","rol":"Admin","imagen_usuario":"#000000"}
+                        """))
+                .andExpect(status().isOk()).andExpect(content().string("1"));
+
+        Usuario u = StreamSupport.stream(usuarios.findAll().spliterator(), false)
+                .filter(usr -> "nuevo@test.com".equals(usr.getCorreo_electronico())).findFirst().orElseThrow();
+        int idU = u.getId_usuario();
+
+        mvc.perform(get("/buscarUsuario").param("id", String.valueOf(idU)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.nombre").value("Nuevo Usuario Test"));
+
+        mvc.perform(post("/updateUsuario").contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"id_usuario":%d,"nombre":"Usuario Modificado","correo_electronico":"nuevo@test.com"}
+                        """.formatted(idU)))
+                .andExpect(status().isOk()).andExpect(content().string("1"));
+
+        mvc.perform(post("/buscarUsuarios").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$").isArray());
+
+        mvc.perform(delete("/deleteUsuario").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"id_usuario\":" + idU + "}"))
+                .andExpect(status().isOk()).andExpect(content().string("1"));
+    }
+
+    @Test
+    void proyectosListaYBuscarTodos() throws Exception {
+        mvc.perform(post("/buscarProyectos").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$").isArray());
+    }
+
+    @Test
+    void tareasCrudCompletoYListados() throws Exception {
+        mvc.perform(post("/addTareas").contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"nombre":"Tarea de Prueba Completa","descripcion":"Verificar todo el controlador",
+                         "fecha_vencimiento":"2026-10-31","lista":"To Do","estado":"Pendiente","id_proyecto":100}
+                        """))
+                .andExpect(status().isOk()).andExpect(content().string("1"));
+
+        Tareas t = StreamSupport.stream(tareas.findAll().spliterator(), false)
+                .filter(tar -> "Tarea de Prueba Completa".equals(tar.getNombre())).findFirst().orElseThrow();
+        int idT = t.getId_tarea();
+
+        mvc.perform(get("/buscarTarea").param("id_tarea", String.valueOf(idT)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.nombre").value("Tarea de Prueba Completa"));
+
+        mvc.perform(post("/updateTareas").contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"id_tarea":%d,"nombre":"Tarea Actualizada","estado":"En proceso"}
+                        """.formatted(idT)))
+                .andExpect(status().isOk()).andExpect(content().string("1"));
+
+        mvc.perform(post("/buscarTareas").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$").isArray());
+
+        mvc.perform(delete("/deleteTareas").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"id_tarea\":" + idT + "}"))
+                .andExpect(status().isOk()).andExpect(content().string("1"));
+    }
+
+    @Test
+    void comentariosCrudCompletoYListados() throws Exception {
+        mvc.perform(post("/addComentario").contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"id_usuario":"Tester","id_tarea":101,"texto_comentario":"Comentario general",
+                         "fecha_hora":"2026-10-27T10:00:00"}
+                        """))
+                .andExpect(status().isOk()).andExpect(content().string("1"));
+
+        Comentarios c = StreamSupport.stream(comentarios.findAll().spliterator(), false)
+                .filter(com -> "Comentario general".equals(com.getTexto_comentario())).findFirst().orElseThrow();
+        int idC = c.getId_comentario();
+
+        mvc.perform(get("/buscarComentario").param("id", String.valueOf(idC)))
+                .andExpect(status().isOk());
+
+        mvc.perform(post("/updateComentario").contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"id_comentario":%d,"id_tarea":101,"id_usuario":"Tester","texto_comentario":"Comentario modificado"}
+                        """.formatted(idC)))
+                .andExpect(status().isOk()).andExpect(content().string("1"));
+
+        mvc.perform(post("/buscarComentarios").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$").isArray());
+
+        mvc.perform(delete("/deleteComentario").contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"id_comentario":%d,"id_tarea":101,"id_usuario":"Tester","texto_comentario":"Comentario modificado"}
+                        """.formatted(idC)))
+                .andExpect(status().isOk()).andExpect(content().string("1"));
+    }
+
+    @Test
+    void asignacionesCrudCompletoYListados() throws Exception {
+        mvc.perform(post("/addAsignacion").contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"id_usuario":1,"id_tarea":10,"fecha_asignacion":"2026-10-27"}
+                        """))
+                .andExpect(status().isOk()).andExpect(content().string("1"));
+
+        Asignaciones a = StreamSupport.stream(asignaciones.findAll().spliterator(), false)
+                .filter(asg -> Integer.valueOf(1).equals(asg.getId_usuario())).findFirst().orElseThrow();
+        int idA = a.getId_asignacion();
+
+        mvc.perform(get("/buscarAsignacion").param("id", String.valueOf(idA)))
+                .andExpect(status().isOk());
+
+        mvc.perform(post("/updateAsignacion").contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"id_asignacion":%d,"id_usuario":2,"id_tarea":10,"fecha_asignacion":"2026-10-28"}
+                        """.formatted(idA)))
+                .andExpect(status().isOk()).andExpect(content().string("1"));
+
+        mvc.perform(post("/buscarAsignaciones").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$").isArray());
+
+        mvc.perform(delete("/deleteAsignacion").contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"id_asignacion":%d,"id_usuario":2,"id_tarea":10,"fecha_asignacion":"2026-10-28"}
+                        """.formatted(idA)))
+                .andExpect(status().isOk()).andExpect(content().string("1"));
     }
 }

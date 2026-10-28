@@ -4,7 +4,7 @@ Fecha de verificación: 21 de octubre de 2026.
 
 ## Evidencias de los POM
 
-- `pom-antes.xml`: POM del último commit previo a esta actualización (Spring Boot 2.7.17 y Java 11).
+- `pom-antes.xml`: copia conservada del POM original (Spring Boot 2.7.17 y Java 11), correspondiente al commit inicial `8dc10fa`. No representa el HEAD actual, que ya incluye la actualización.
 - `pom-previo-springboot4.xml`: cambios manuales de Java 21 y plugins que ya estaban en el workspace antes de migrar Spring Boot.
 - `pom-despues.xml`: copia del POM final, equivalente a `../../pom.xml`.
 
@@ -40,7 +40,9 @@ Se conservaron las rutas y nombres JSON con guiones bajos. Los datos y el esquem
 - `/buscarProyectos` respondió y sus identificadores coincidieron con la consulta realizada a través del frontend actualizado.
 - Las tres regresiones nuevas validan CRUD de proyecto, consultas nativas de tareas/comentarios y autenticación por consulta parametrizada mediante MockMvc + JPA + H2.
 
-El análisis SonarQube queda preparado en el POM; no se ejecutó contra un servidor ni se atribuye un Quality Gate aprobado.
+El análisis SonarQube y su Quality Gate ya están definidos en el `Jenkinsfile` para Linux. Los archivos POM/Jenkinsfile se comprobaron en GitHub, rama `main`, el 21/10/2026. No se dispone de evidencia de un build completo autenticado en Jenkins ni de aprobación del Quality Gate; estos resultados no se dan por obtenidos. Consulta [la guía actualizada de Jenkins](../jenkins-linux.md).
+
+Repositorio: https://github.com/RamirezLuisManuel/Admin-Proyectos-Back
 
 ## Reproducción en PowerShell
 
